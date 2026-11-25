@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enrollment System | Student Profiles</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f4f6f9; }
+    .student-list { height: calc(100vh - 150px); overflow-y: auto; }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: #0d6efd; color: #fff; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .avatar-lg { width: 80px; height: 80px; font-size: 1.8rem; }
+    .info-label { font-size: .75rem; text-transform: uppercase; color: #6c757d; margin-bottom: 0; }
+    .info-value { font-weight: 500; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container-fluid">
+    <span class="navbar-brand mb-0 h1">📚 Online Enrollment System</span>
+    <span class="text-white">
+      {{ request.user.username }} |
+      <a class="text-white" href="{% url 'admin:logout' %}">Logout</a>
+    </span>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row g-3">
+
+    <!-- LEFT: STUDENT LIST -->
+    <div class="col-md-4 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <form method="get" action="{% url 'student_list' %}">
+            <input type="text" name="q" value="{{ query }}" class="form-control"
+                   placeholder="Search name or ID...">
+          </form>
+          <small class="text-muted">{{ students.count }} student{{ students.count|pluralize }}</small>
+        </div>
+        <div class="list-group list-group-flush student-list">
+          {% for s in students %}
+            <a href="{% url 'student_detail' s.pk %}{% if query %}?q={{ query }}{% endif %}"
+               class="list-group-item list-group-item-action d-flex align-items-center gap-3
+                      {% if selected and selected.pk == s.pk %}active{% endif %}">
+              <div class="avatar">{{ s.initials }}</div>
+              <div>
+                <div class="fw-semibold">{{ s.full_name }}</div>
+                <small>{{ s.student_id }} • {{ s.course }}</small>
+              </div>
+            </a>
+          {% empty %}
+            <div class="p-3 text-muted">No students found.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: STUDENT DETAILS -->
+    <div class="col-md-8 col-lg-9">
+      {% if selected %}
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <!-- Header -->
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="avatar avatar-lg">{{ selected.initials }}</div>
+            <div>
+              <h4 class="mb-0">{{ selected.first_name }} {{ selected.middle_name }} {{ selected.last_name }}</h4>
+              <div class="text-muted">{{ selected.student_id }} • {{ selected.course }}
+                – {{ selected.get_year_level_display }}, Section {{ selected.section }}</div>
+              <span class="badge
+                {% if selected.status == 'Enrolled' %}bg-success
+                {% elif selected.status == 'Pending' %}bg-warning text-dark
+                {% else %}bg-danger{% endif %}">{{ selected.status }}</span>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#personal">Personal Info</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#enrollment">Enrollment</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#family">Family Background</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#education">Educational Background</button></li>
+          </ul>
+
+          <div class="tab-content pt-4">
+
+            <!-- Personal -->
+            <div class="tab-pane fade show active" id="personal">
+              <div class="row">
+                <div class="col-md-4"><p class="info-label">Full Name</p><p class="info-value">{{ selected.first_name }} {{ selected.middle_name }} {{ selected.last_name }}</p></div>
+                <div class="col-md-4"><p class="info-label">Birth Date</p><p class="info-value">{{ selected.birth_date|date:"F d, Y" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Gender</p><p class="info-value">{{ selected.get_gender_display }}</p></div>
+                <div class="col-md-4"><p class="info-label">Email</p><p class="info-value">{{ selected.email }}</p></div>
+                <div class="col-md-4"><p class="info-label">Contact Number</p><p class="info-value">{{ selected.contact_number }}</p></div>
+                <div class="col-md-12"><p class="info-label">Address</p><p class="info-value">{{ selected.address }}</p></div>
+              </div>
+            </div>
+
+            <!-- Enrollment -->
+            <div class="tab-pane fade" id="enrollment">
+              <div class="row">
+                <div class="col-md-4"><p class="info-label">Student ID</p><p class="info-value">{{ selected.student_id }}</p></div>
+                <div class="col-md-4"><p class="info-label">Course</p><p class="info-value">{{ selected.course }}</p></div>
+                <div class="col-md-4"><p class="info-label">Year Level</p><p class="info-value">{{ selected.get_year_level_display }}</p></div>
+                <div class="col-md-4"><p class="info-label">Section</p><p class="info-value">{{ selected.section }}</p></div>
+                <div class="col-md-4"><p class="info-label">Status</p><p class="info-value">{{ selected.status }}</p></div>
+                <div class="col-md-4"><p class="info-label">Date Enrolled</p><p class="info-value">{{ selected.date_enrolled|date:"F d, Y" }}</p></div>
+              </div>
+            </div>
+
+            <!-- Family -->
+            <div class="tab-pane fade" id="family">
+              {% with f=selected.family %}
+              {% if f %}
+              <div class="row">
+                <div class="col-md-6"><p class="info-label">Father's Name</p><p class="info-value">{{ f.father_name|default:"—" }}</p></div>
+                <div class="col-md-6"><p class="info-label">Father's Occupation</p><p class="info-value">{{ f.father_occupation|default:"—" }}</p></div>
+                <div class="col-md-6"><p class="info-label">Mother's Name</p><p class="info-value">{{ f.mother_name|default:"—" }}</p></div>
+                <div class="col-md-6"><p class="info-label">Mother's Occupation</p><p class="info-value">{{ f.mother_occupation|default:"—" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Guardian</p><p class="info-value">{{ f.guardian_name|default:"—" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Relationship</p><p class="info-value">{{ f.guardian_relationship|default:"—" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Guardian Contact</p><p class="info-value">{{ f.guardian_contact|default:"—" }}</p></div>
+              </div>
+              {% else %}
+                <p class="text-muted">No family background recorded.</p>
+              {% endif %}
+              {% endwith %}
+            </div>
+
+            <!-- Education -->
+            <div class="tab-pane fade" id="education">
+              {% with e=selected.education %}
+              {% if e %}
+              <div class="row">
+                <div class="col-md-8"><p class="info-label">Elementary School</p><p class="info-value">{{ e.elementary_school|default:"—" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Year Graduated</p><p class="info-value">{{ e.elementary_year_graduated|default:"—" }}</p></div>
+                <div class="col-md-8"><p class="info-label">High School</p><p class="info-value">{{ e.high_school|default:"—" }}</p></div>
+                <div class="col-md-4"><p class="info-label">Year Graduated</p><p class="info-value">{{ e.high_school_year_graduated|default:"—" }}</p></div>
+                <div class="col-md-12"><p class="info-label">Last School Attended</p><p class="info-value">{{ e.last_school_attended|default:"—" }}</p></div>
+              </div>
+              {% else %}
+                <p class="text-muted">No educational background recorded.</p>
+              {% endif %}
+              {% endwith %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <div class="card shadow-sm">
+        <div class="card-body text-center text-muted py-5">
+          <h5>👈 Select a student</h5>
+          <p>Click a name on the left to view their full profile.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
