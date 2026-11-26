@@ -1,0 +1,35 @@
+{% extends 'students/base.html' %}
+{% block title %}Sign in | Online Enrollment System{% endblock %}
+{% block bodyclass %}center{% endblock %}
+
+{% block extra_css %}
+<style>
+  .login { width: 100%; max-width: 448px; padding: 32px; }
+  .login .logo { margin: 0 auto 16px; }
+  .login h1 { text-align: center; font-size: 20px; margin: 0 0 4px; }
+  .login .sub { text-align: center; color: #64748b; font-size: 14px; margin: 0 0 24px; }
+  .or { display: flex; align-items: center; gap: 12px; color: #94a3b8; font-size: 12px; margin: 20px 0; }
+  .or::before, .or::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+  .note { text-align: center; color: #64748b; font-size: 12px; margin: 14px 0 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card login">
+  <div class="logo">E</div>
+  <h1>Online Enrollment System</h1>
+  <p class="sub">Admin sign in to manage enrollees</p>
+
+  <form method="post">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert">{{ e }}</div>{% endfor %}
+    <div class="field"><label for="id_username">Username</label>{{ form.username }}</div>
+    <div class="field"><label for="id_password">Password</label>{{ form.password }}</div>
+    <button class="btn btn-primary" type="submit">Log in as Admin</button>
+  </form>
+
+  <div class="or">OR</div>
+  <a class="btn btn-outline" href="{% url 'student_list' %}">Continue without login</a>
+  <p class="note">View-only access. Adding enrollees requires an admin login.</p>
+</div>
+{% endblock %}

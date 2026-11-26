@@ -1,0 +1,9 @@
+<div class="grid">
+  {% for field in form %}
+    <div class="field {% if field.name == 'address' or field.name == 'last_school_attended' %}full{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% for e in field.errors %}<div class="err">{{ e }}</div>{% endfor %}
+    </div>
+  {% endfor %}
+</div>

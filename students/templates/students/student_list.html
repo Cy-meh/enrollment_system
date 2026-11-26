@@ -1,0 +1,193 @@
+{% extends 'students/base.html' %}
+{% block title %}Students | Online Enrollment System{% endblock %}
+
+{% block extra_css %}
+<style>
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
+  .list-head { padding: 16px; border-bottom: 1px solid #e2e8f0; }
+  .count { font-size: 12px; color: #64748b; margin-top: 8px; }
+  .list { max-height: calc(100vh - 230px); overflow-y: auto; padding: 8px; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; }
+  .item:hover { background: #f1f5f9; }
+  .item.active { background: #eef2ff; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #4f46e5; color: #fff; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+  .avatar.lg { width: 72px; height: 72px; font-size: 24px; }
+  .item .name { font-weight: 600; font-size: 14px; }
+  .item .meta { font-size: 12px; color: #64748b; }
+  .empty { padding: 24px; text-align: center; color: #64748b; }
+
+  .detail { padding: 28px; }
+  .profile-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .profile-head h1 { margin: 0 0 4px; font-size: 22px; }
+  .profile-head .meta { color: #64748b; font-size: 14px; margin-bottom: 8px; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.Enrolled { background: #dcfce7; color: #15803d; }
+  .badge.Pending  { background: #fef3c7; color: #b45309; }
+  .badge.Dropped  { background: #fee2e2; color: #b91c1c; }
+
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid #e2e8f0; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab { padding: 10px 14px; background: none; border: none; border-bottom: 2px solid transparent;
+         color: #64748b; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .tab:hover { color: #1e293b; }
+  .tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .info-grid .full { grid-column: 1 / -1; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: 4px; }
+  .value { font-weight: 500; }
+  .placeholder { text-align: center; padding: 80px 20px; color: #64748b; }
+  .placeholder h2 { color: #1e293b; margin: 0 0 8px; }
+  .guest-tag { background: rgba(255,255,255,.2); padding: 6px 12px; border-radius: 999px; font-size: 12px; }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .list { max-height: 320px; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <a class="brand" href="{% url 'student_list' %}"><div class="logo sm">E</div> Online Enrollment System</a>
+  <div class="actions">
+    {% if user.is_authenticated %}
+      <span>{{ user.username }}</span>
+      <a class="btn btn-sm btn-ghost" href="{% url 'student_add' %}">+ Add student</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-ghost" type="submit">Log out</button>
+      </form>
+    {% else %}
+      <span class="guest-tag">View-only</span>
+      <a class="btn btn-sm btn-ghost" href="{% url 'home' %}">Admin login</a>
+    {% endif %}
+  </div>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;">
+  {% for m in messages %}<div class="alert ok">{{ m }}</div>{% endfor %}
+</div>
+
+<div class="layout">
+  <div class="card">
+    <div class="list-head">
+      <form method="get" action="{% url 'student_list' %}">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search name or ID...">
+      </form>
+      <div class="count">{{ students.count }} student{{ students.count|pluralize }}</div>
+    </div>
+    <div class="list">
+      {% for s in students %}
+        <a class="item {% if selected and selected.pk == s.pk %}active{% endif %}"
+           href="{% url 'student_detail' s.pk %}{% if query %}?q={{ query }}{% endif %}">
+          <div class="avatar">{{ s.initials }}</div>
+          <div>
+            <div class="name">{{ s.full_name }}</div>
+            <div class="meta">{{ s.student_id }} • {{ s.course }}</div>
+          </div>
+        </a>
+      {% empty %}
+        <div class="empty">No students found.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card detail">
+    {% if selected %}
+      <div class="profile-head">
+        <div class="avatar lg">{{ selected.initials }}</div>
+        <div>
+          <h1>{{ selected.first_name }} {{ selected.middle_name }} {{ selected.last_name }}</h1>
+          <div class="meta">{{ selected.student_id }} • {{ selected.course }} – {{ selected.get_year_level_display }}, Section {{ selected.section }}</div>
+          <span class="badge {{ selected.status }}">{{ selected.status }}</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="personal">Personal Info</button>
+        <button class="tab" data-tab="enrollment">Enrollment</button>
+        <button class="tab" data-tab="family">Family Background</button>
+        <button class="tab" data-tab="education">Educational Background</button>
+      </div>
+
+      <div class="pane active" id="personal">
+        <div class="info-grid">
+          <div><div class="label">Full Name</div><div class="value">{{ selected.first_name }} {{ selected.middle_name }} {{ selected.last_name }}</div></div>
+          <div><div class="label">Birth Date</div><div class="value">{{ selected.birth_date|date:"F d, Y" }}</div></div>
+          <div><div class="label">Gender</div><div class="value">{{ selected.get_gender_display }}</div></div>
+          <div><div class="label">Email</div><div class="value">{{ selected.email }}</div></div>
+          <div><div class="label">Contact Number</div><div class="value">{{ selected.contact_number }}</div></div>
+          <div class="full"><div class="label">Address</div><div class="value">{{ selected.address }}</div></div>
+        </div>
+      </div>
+
+      <div class="pane" id="enrollment">
+        <div class="info-grid">
+          <div><div class="label">Student ID</div><div class="value">{{ selected.student_id }}</div></div>
+          <div><div class="label">Course</div><div class="value">{{ selected.course }}</div></div>
+          <div><div class="label">Year Level</div><div class="value">{{ selected.get_year_level_display }}</div></div>
+          <div><div class="label">Section</div><div class="value">{{ selected.section }}</div></div>
+          <div><div class="label">Status</div><div class="value">{{ selected.status }}</div></div>
+          <div><div class="label">Date Enrolled</div><div class="value">{{ selected.date_enrolled|date:"F d, Y" }}</div></div>
+        </div>
+      </div>
+
+      <div class="pane" id="family">
+        {% with f=selected.family %}
+          {% if f %}
+          <div class="info-grid">
+            <div><div class="label">Father's Name</div><div class="value">{{ f.father_name|default:"—" }}</div></div>
+            <div><div class="label">Father's Occupation</div><div class="value">{{ f.father_occupation|default:"—" }}</div></div>
+            <div></div>
+            <div><div class="label">Mother's Name</div><div class="value">{{ f.mother_name|default:"—" }}</div></div>
+            <div><div class="label">Mother's Occupation</div><div class="value">{{ f.mother_occupation|default:"—" }}</div></div>
+            <div></div>
+            <div><div class="label">Guardian</div><div class="value">{{ f.guardian_name|default:"—" }}</div></div>
+            <div><div class="label">Relationship</div><div class="value">{{ f.guardian_relationship|default:"—" }}</div></div>
+            <div><div class="label">Guardian Contact</div><div class="value">{{ f.guardian_contact|default:"—" }}</div></div>
+          </div>
+          {% else %}<div class="empty">No family background recorded.</div>{% endif %}
+        {% endwith %}
+      </div>
+
+      <div class="pane" id="education">
+        {% with e=selected.education %}
+          {% if e %}
+          <div class="info-grid">
+            <div><div class="label">Elementary School</div><div class="value">{{ e.elementary_school|default:"—" }}</div></div>
+            <div><div class="label">Year Graduated</div><div class="value">{{ e.elementary_year_graduated|default:"—" }}</div></div>
+            <div></div>
+            <div><div class="label">High School</div><div class="value">{{ e.high_school|default:"—" }}</div></div>
+            <div><div class="label">Year Graduated</div><div class="value">{{ e.high_school_year_graduated|default:"—" }}</div></div>
+            <div></div>
+            <div class="full"><div class="label">Last School Attended</div><div class="value">{{ e.last_school_attended|default:"—" }}</div></div>
+          </div>
+          {% else %}<div class="empty">No educational background recorded.</div>{% endif %}
+        {% endwith %}
+      </div>
+
+    {% else %}
+      <div class="placeholder">
+        <h2>Select a student</h2>
+        <p>Click a name on the left to view their full profile.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab, .pane').forEach(function (el) { el.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+{% endblock %}

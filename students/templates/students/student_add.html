@@ -1,0 +1,47 @@
+{% extends 'students/base.html' %}
+{% block title %}Add Student | Online Enrollment System{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-card { max-width: 800px; margin: 0 auto; padding: 32px; }
+  .form-card h1 { margin: 0 0 4px; font-size: 22px; }
+  .form-card h2 { font-size: 15px; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; color: #4338ca; }
+  .form-card .sub { color: #64748b; font-size: 14px; margin: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .field.full { grid-column: 1 / -1; }
+  .row { display: flex; gap: 12px; margin-top: 24px; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <a class="brand" href="{% url 'student_list' %}"><div class="logo sm">E</div> Online Enrollment System</a>
+  <div class="actions">
+    <span>{{ user.username }}</span>
+    <a class="btn btn-sm btn-ghost" href="{% url 'student_list' %}">← Back to students</a>
+  </div>
+</div>
+
+<div class="card form-card">
+  <h1>Enroll a student</h1>
+  <p class="sub">Fill in the details below, then save.</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <h2>Personal &amp; Enrollment</h2>
+    {% include 'students/_fields.html' with form=student_form %}
+
+    <h2>Family Background</h2>
+    {% include 'students/_fields.html' with form=family_form %}
+
+    <h2>Educational Background</h2>
+    {% include 'students/_fields.html' with form=edu_form %}
+
+    <div class="row">
+      <button class="btn btn-primary" type="submit">Save student</button>
+      <a class="btn btn-outline" href="{% url 'student_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
